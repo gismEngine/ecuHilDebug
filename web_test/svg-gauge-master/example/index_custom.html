@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Gauges</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="MobileOptimized" content="480" />
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#2f434e" />
+    <meta http-equiv="cleartype" content="on" />
+    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="dark.css" />
+    <style>
+	  .info {
+		padding: 20px;
+	  }
+
+	  @media only screen and (min-device-width: 768px) {
+		.gauge-container {
+		  width: 200px;
+		  height: 200px;
+		}
+	  }
+	  
+	#wrapper {
+		border: 1px solid black;
+		padding-left: 20px;
+		height: 250px;
+	}
+
+	.gauge-block {
+		float:left;
+		border: 1px solid yellow;
+		background-color: black;
+	}
+	
+	
+
+
+.hidden {
+  display: none;
+}
+
+.visuallyhidden {
+  opacity: 0;
+}
+
+button {
+  display: block;
+  margin: 0 auto;
+}
+	
+    </style>
+  </head>
+
+  <body>
+    <div class="info">
+      <h2>DGID HILL display</h2>
+      <h4>Concept demo</h4>
+    </div>
+
+
+	<button onclick="hideShow()">Click Me</button>
+
+	<div id="wrapper">
+		<div class="gauge-block">
+			Turbo pressure
+			<div id="gauge_turbo" class="gauge-container four"></div>
+		</div>
+		<div class="gauge-block">
+			Engine speed
+			<div id="gauge_rpm" class="gauge-container three"></div>
+		</div>
+		<div class="gauge-block">
+			Battery voltage
+			<div id="gauge_vbat" class="gauge-container four"></div>
+		</div>
+	</div>
+	
+	<br>
+	<button type="button" value="read" id="test_button" onclick="sendHola()">Send command</button>
+	
+
+    <script type="text/javascript" src="../src/gauge.js"> </script>
+    <script>
+      var gauge_rpm = Gauge(
+        document.getElementById("gauge_rpm"),
+		    {
+          max: 8000,
+		  min: 0,
+		  label: function(value) {
+			return Math.round(value) + " rpm";
+		  },
+		  color: function(value) {
+			  if(value < 800) {
+				return "#5ee432";
+			  }else if(value < 4000) {
+				return "#fffa50";
+			  }else if(value < 8000) {
+				return "#f7aa38";
+			  }else {
+				return "#ef4655";
+			  }
+		  },
+          value: 50
+        }
+      );
+
+      var gauge_turbo = Gauge(
+        document.getElementById("gauge_turbo"),
+		    {
+          max: 3,
+		  min: 0,
+          dialStartAngle: 180,
+          dialEndAngle: -90,
+          viewBox: "0 0 60 60",
+		  label: function(value) {
+			return Math.round(value) + " bar";
+		  },
+		  color: function(value) {
+			  if(value < 2) {
+				return "#5ee432";
+			  }else if(value < 3) {
+				return "#f7aa38";
+			  }else {
+				return "#ef4655";
+			  }
+		  },
+          value: 0
+        }
+      );
+	  
+      var gauge_vbat = Gauge(
+        document.getElementById("gauge_vbat"),
+		    {
+          max: 30,
+		  min: 6,
+          dialStartAngle: 180,
+          dialEndAngle: -90,
+          viewBox: "0 0 60 60",
+		  label: function(value) {
+			return Math.round(value) + " V";
+		  },
+		  color: function(value) {
+			  if(value < 12) {
+				return "#5ee432";
+			  }else if(value < 13) {
+				return "#fffa50";
+			  }else if(value < 14) {
+				return "#f7aa38";
+			  }else {
+				return "#ef4655";
+			  }
+		  },
+          value: 10
+        }
+      );
+	  
+	gauge_rpm.setValueAnimated(0, 0.75);
+	gauge_turbo.setValueAnimated(0, 0.75);
+	gauge_vbat.setValueAnimated(0, 0.75);
+
+/*      (function loop() {
+        var rpm_rnd = Math.random() * 8000,
+            turbo_rnd = Math.random() * 3,
+            vbat_rnd = 6 + Math.random() * 10;
+			
+		gauge_rpm.setValueAnimated(rpm_rnd, 0.75);
+        gauge_turbo.setValueAnimated(turbo_rnd, 0.75);
+		gauge_vbat.setValueAnimated(vbat_rnd, 0.75);
+		
+        window.setTimeout(loop, 4000);
+		
+      })(); */
+	  
+	  function hideShow() {
+		  var x = document.getElementById("wrapper");
+		  if (x.style.display === "none") {
+			x.style.display = "block";
+		  } else {
+			x.style.display = "none";
+		  }
+		}
+		
+		
+		
+		var Socket;
+		console.log('Starting websocket at: ws://' + window.location.hostname + ':81/');
+		Socket=new WebSocket('ws://' + window.location.hostname + ':81/');
+		Socket.onmessage=function(evt){
+			console.log(evt.data);
+		}		
+		function sendCmd(cmd){
+			Socket.send(cmd);
+		}
+		
+		function sendHola(){
+			sendCmd('{"ID":"cmd","data":"H"}');
+		}
+		
+		
+		</script>
+    </script>
+  </body>
+</html>
