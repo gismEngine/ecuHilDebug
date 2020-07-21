@@ -37,9 +37,13 @@
   void setRpmSetpoint(uint32_t rpm);
   void setPwmSetpoint(uint32_t pwm);
 
-  void crank_manage(void * pvParameters);
   uint32_t calcToothTime(uint32_t rpm);
   uint32_t getRpmSetpoint();
   uint32_t getToothTime();
+
+  // DEPRECATED
+  void crank_manage(void * pvParameters);
+  void refreshCrank();
+  void refreshRpmPot();
 
 #endif
