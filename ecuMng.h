@@ -10,17 +10,19 @@
 
   #define RX_BUFF_SIZE 20
 
-  #define ACC_SAMPLE_T    1000
+  #define ACC_SAMPLE_T    500
   #define VBAT_SAMPLE_T   1000
   #define RPM_SAMPLE_T    250
   #define SWITCH_SAMPLE_T 1000
   #define TURBO_SAMPLE_T  1000
+  #define TEXA1_SAMPLE_T  1000
 
   #define ACC_ID 0x61
   #define VBAT_ID 0x62
   #define RPM_ID 0x72
   #define SWITCH_ID 0x73
   #define TURBO_ID 0x74
+  #define TEXA1_ID 0x75
   
 
   // GENERIC FRAME:

@@ -6,6 +6,7 @@ Frame rpm_frame;
 Frame turbo_frame;
 Frame v_bat_frame;
 Frame switch_frame;
+Frame texa1_frame;
 
 Frame *last_frame;
 bool tx_blocked = false;
@@ -15,6 +16,7 @@ uint32_t vbat_req_t = 0;
 uint32_t rpm_req_t = 0;
 uint32_t switch_req_t = 0;
 uint32_t turbo_req_t = 0;
+uint32_t texa1_req_t = 0;
 
 uint32_t tankSwitchReqCount = 0;
 
@@ -42,6 +44,27 @@ void ecu_manage(){
     }
   }
 
+  if (millis() >= acc_req_t + ACC_SAMPLE_T){
+    if (!tx_blocked){
+      sendFrame(&acc_frame);
+      acc_req_t = millis();
+    }
+  }
+
+  if (millis() >= turbo_req_t + TURBO_SAMPLE_T){
+    if (!tx_blocked){
+      sendFrame(&turbo_frame);
+      turbo_req_t = millis();
+    }
+  }
+
+//  if (millis() >= texa1_req_t + TEXA1_SAMPLE_T){
+//    if (!tx_blocked){
+//      sendFrame(&texa1_frame);
+//      texa1_req_t = millis();
+//    }
+//  }
+
   if (tankSwitchReqCount){
     if (!tx_blocked){
       Serial.println("send tank sw cmd");
@@ -62,9 +85,8 @@ void ecu_manage(){
           DEBUG.print(F("RPM setpoint: "));
           DEBUG.println(getRpmSetpoint());
 
-//          DEBUG.print(F("Tooth time: "));
-//          DEBUG.println(getToothTime());          
-          
+          DEBUG.print(F("Tooth time: "));
+          DEBUG.println(getToothTime());    
      }else if (c == 't'){
         DEBUG.print("TURBO >>");
         sendFrame(&turbo_frame);
@@ -150,6 +172,14 @@ void initFrames(){
   switch_frame.request[3] = 0x84;
   switch_frame.id = SWITCH_ID;
   switch_frame.response_size = 1;
+
+  // AA875586 texa1_frame
+  switch_frame.request[0] = 0xAA;
+  switch_frame.request[1] = 0x87;
+  switch_frame.request[2] = 0x55;
+  switch_frame.request[3] = 0x86;
+  switch_frame.id = TEXA1_ID;
+  switch_frame.response_size = 3;
 }
 
 
@@ -201,8 +231,11 @@ void sendFrame(Frame *f){
 void printHuman(Frame *f){
 
   if(f->id == ACC_ID){
-    DEBUG.print(f->response[1], DEC);
-    DEBUG.println(" %");
+    uint8_t acc_pdl = f->response[1];
+    broadcastJsonById("acc_pdl", acc_pdl);
+
+    //DEBUG.print(acc_pdl, DEC);
+    //DEBUG.println(" %");
     
   }else if(f->id == VBAT_ID){
     
@@ -211,66 +244,86 @@ void printHuman(Frame *f){
     
     if (v_bat < 0) v_bat = 0;
     if (v_key < 0) v_key = 0;
-    
-//    DEBUG.print("Vbatt: ");
-//    DEBUG.print(v_bat, 1);
-//    DEBUG.print(" V");
 
     uint32_t v_bat_uint = v_bat * 10;
     broadcastJsonById("v_bat", v_bat_uint);
 
+//    DEBUG.print("Vbatt: ");
+//    DEBUG.print(v_bat, 1);
+//    DEBUG.print(" V");
+
 //    DEBUG.print(" | ");
-//    
+
+    uint32_t v_key_uint = v_key * 10;
+    broadcastJsonById("v_key", v_key_uint);
+    
 //    DEBUG.print("Vkey: ");
 //    DEBUG.print(v_key, 1);
 //    DEBUG.print(" V");
 
-    uint32_t v_key_uint = v_key * 10;
-    broadcastJsonById("v_key", v_key_uint);
+//    DEBUG.print(" | ");
+
+    float v_vcc = 0.025 * f->response[3]  + 0.15;
+    uint32_t v_vcc_uint = v_vcc * 10;
+    broadcastJsonById("v_vcc", v_vcc_uint);
+        
+//    DEBUG.print("Vvcc: ");
+//    DEBUG.print(v_key, 1);
+//    DEBUG.print(" V");
 
 //    DEBUG.print(" | ");
-//    
-//    DEBUG.print("P_MANI: ");
+
     float p_mani = (float) (f->response[5]) / 100;
+    uint32_t p_mani_uint = p_mani * 100;
+    broadcastJsonById("p_mani", p_mani_uint);
+
+//    DEBUG.print("P_MANI: ");    
 //    DEBUG.print(p_mani, 2);
 //    DEBUG.print(" bar");
 
-    uint32_t p_mani_uint = p_mani * 100;
-    broadcastJsonById("p_mani", p_mani_uint);
+//    DEBUG.print(" | ");
+
+    uint32_t t_water = f->response[10];
+    broadcastJsonById("t_water", t_water);
+    
+//    DEBUG.print("T_WATER: ");    
+//    DEBUG.print(t_water);
+//    DEBUG.print(" ºC");
     
 //    DEBUG.print(" | ");
-//    
-//    DEBUG.print("P_GAS: ");
-    //float p_gas = (float) (f->response[12] * 2) / 100;
-    float p_gas = (float) f->response[12];
-//    DEBUG.print(p_gas, 2);
-//    DEBUG.print(" bar");
 
+    float p_gas = (float) f->response[12];
     uint32_t p_gas_uint = p_gas * 100;
     broadcastJsonById("p_gas", p_gas_uint);
     
+//    DEBUG.print("P_GAS: ");    
+//    DEBUG.print(p_gas, 2);
+//    DEBUG.print(" bar");
+
 //    DEBUG.print(" | ");
-//    
-//    DEBUG.print("T_RAIL_GAS: ");
+
     uint32_t t_rail_gas = (f->response[14] * 5) - 40;
+    broadcastJsonById("t_rail_gas", t_rail_gas);
+    
+//    DEBUG.print("T_RAIL_GAS: ");    
 //    DEBUG.print(t_rail_gas, DEC);
 //    DEBUG.print(" ºC");
 
-    broadcastJsonById("t_rail_gas", t_rail_gas);
-
 //    DEBUG.print(" | ");
-//
-//    DEBUG.print("LEVEL: ");
+
     uint32_t gas_level = f->response[15];
+    broadcastJsonById("gas_level", gas_level);
+    
+//    DEBUG.print("LEVEL: ");    
 //    DEBUG.print(gas_level, DEC);
 //    DEBUG.print(" bar");
 
-    broadcastJsonById("gas_level", gas_level);
-
 //    DEBUG.print(" | ");
-//    
-//    DEBUG.print("SWITCH: ");
+
     uint32_t gas_sw = f->response[16];
+    broadcastJsonById("gas_sw", gas_sw);
+    
+//    DEBUG.print("SWITCH: ");    
 //    if (gas_sw == 0){
 //      DEBUG.print("OFF");
 //    }else if (gas_sw == 1){
@@ -278,8 +331,6 @@ void printHuman(Frame *f){
 //    }else{
 //      DEBUG.print(gas_sw, DEC);
 //    }
-
-    broadcastJsonById("gas_sw", gas_sw);
 
 //    DEBUG.print(" | CRC: ");
 //    DEBUG.print(f->response[17], DEC);
@@ -291,10 +342,10 @@ void printHuman(Frame *f){
     uint8_t r_lsb = f->response[2];
     
     uint16_t rpm = ((uint16_t)r_msb << 8) | r_lsb;
-//    DEBUG.print(rpm, DEC);
-//    DEBUG.println(" rpm");
-
     broadcastJsonById("rpm", rpm);
+    
+//    DEBUG.print(rpm, DEC);
+//    DEBUG.println(" rpm");    
   
   }else if(f->id == SWITCH_ID){
     DEBUG.print("\nSWITCH!\n\n");
@@ -302,13 +353,26 @@ void printHuman(Frame *f){
   }else if(f->id == TURBO_ID){
    
     float turbo = (float) f->response[1] / 100;
-    DEBUG.print(turbo, 2);
-    DEBUG.println(" bar");
+    uint32_t turbo_uint = f->response[1];
+    broadcastJsonById("turbo", turbo_uint);
+
+//    DEBUG.print(turbo, 2);
+//    DEBUG.println(" bar");
+  
+  }else if(f->id == TEXA1_ID){
+   
+    uint8_t r_msb = f->response[1];
+    uint8_t r_lsb = f->response[2];
     
+    uint16_t t_exa1 = ((uint16_t)r_msb << 8) | r_lsb;
+    broadcastJsonById("texa1", t_exa1);
+
+//    DEBUG.print(t_exa1);
+//    DEBUG.println(" ºC");
+     
   }else{
     DEBUG.println(F("ERROR: Unknown frame ID"));
   }
-
 }
 
 void sendTankSwCmd(){

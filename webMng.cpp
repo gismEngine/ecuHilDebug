@@ -6,10 +6,10 @@ DNSServer dnsServer;                                 // DNS for the captive port
 WebServer server(80);                                // Web server. Only one client! To be updated to ESPAsyncWebServer?
 
 
-const char* ssid     = "MOVISTAR_3B48";
+const char* ssid     = "MOVISTAR_3B48-2G";
 const char* password = "4Wootw4Hur393MUsu4uu";
 
-IPAddress local_IP(192, 168, 1, 200);
+IPAddress local_IP(192, 168, 10, 200);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 0, 0);
 IPAddress primaryDNS(8, 8, 8, 8); //optional

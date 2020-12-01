@@ -65,6 +65,7 @@ void loop() {
 //    broadcastJsonById("alive!", c_alive);
 //    c_alive = c_alive + 1;
 //    alive = millis();
+//    DEBUG.println("A");
 //  }
   
   webMng.manage();         // Do wifi stuff
